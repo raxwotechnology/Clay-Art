@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useCompanySettings } from '../../features/settings/useSettings';
 import {
     LayoutDashboard, BarChart3, Package, ShoppingCart, Users, Settings,
     FolderTree, Award, UserCircle, Tags, Warehouse, Boxes, Truck,
@@ -124,6 +125,11 @@ const menuItems = [
 ];
 
 export default function Sidebar({ userRole, isOpen, onClose }) {
+    const { data: settingsRes } = useCompanySettings();
+    const companySettings = settingsRes?.data || {};
+    const companyName = companySettings.companyName || 'RC Traders';
+    const logoUrl = companySettings.logoUrl;
+
     const sidebarRef = useRef(null);
     const location = useLocation();
     const navigate = useNavigate();
@@ -209,18 +215,30 @@ export default function Sidebar({ userRole, isOpen, onClose }) {
                 <div className="w-[280px] flex flex-col h-full bg-white">
 
                     {/* ── Logo / Brand ── */}
-                    <div className="p-6 flex items-center justify-between flex-shrink-0 bg-white">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
-                                <Package className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <h2 className="font-bold text-gray-900 text-xl tracking-tight">RC Traders</h2>
+                    <div className="p-5 flex items-center justify-between flex-shrink-0 bg-white border-b border-gray-100/70">
+                        <div className="flex items-center gap-3 overflow-hidden min-w-0 pr-2">
+                            {logoUrl ? (
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 bg-white shadow-sm border border-gray-200/80 p-1">
+                                    <img src={logoUrl} alt={companyName} className="max-w-full max-h-full object-contain" />
+                                </div>
+                            ) : (
+                                <div className="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 flex-shrink-0">
+                                    <Package className="w-6 h-6 text-white" />
+                                </div>
+                            )}
+                            <div className="flex flex-col min-w-0">
+                                <h2 className="font-bold text-gray-900 text-base tracking-tight truncate leading-tight" title={companyName}>
+                                    {companyName}
+                                </h2>
+                                <span className="text-[10px] font-semibold text-indigo-600 tracking-wider uppercase truncate mt-0.5">
+                                    {companySettings.tagline || 'ERP System'}
+                                </span>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                            className="p-2 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-gray-900 transition-all flex-shrink-0"
+                            aria-label="Close sidebar"
                         >
                             <PanelLeftClose size={18} />
                         </button>

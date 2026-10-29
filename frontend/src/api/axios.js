@@ -1,7 +1,24 @@
 import axios from 'axios';
 
+// Get API base URL with fallback and format cleanup
+const getBaseUrl = () => {
+    let url = import.meta.env.VITE_API_URL;
+    if (!url) {
+        url = window.location.hostname === 'localhost'
+            ? 'http://localhost:5005/api'
+            : 'https://ware-house-system-2.onrender.com/api';
+    }
+    // Clean trailing slashes
+    url = url.trim().replace(/\/+$/, '');
+    // Ensure /api suffix exists
+    if (!url.endsWith('/api')) {
+        url += '/api';
+    }
+    return url;
+};
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: getBaseUrl(),
     headers: {
         'Content-Type': 'application/json',
     },

@@ -27,7 +27,8 @@ const ThermalReceipt = forwardRef(({ invoice, payments = [], companyInfo: propCo
         taxNumber: s.taxRegistrationNumber,
         email: s.email,
         website: s.website,
-        footerMessage: s.receiptFooterMessage || 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.'
+        footerMessage: s.receiptFooterMessage || 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.',
+        logo: s.logoUrl || propCompanyInfo?.logo || ''
     };
 
     const customer = invoice.customerSnapshot || {};
@@ -55,7 +56,7 @@ const ThermalReceipt = forwardRef(({ invoice, payments = [], companyInfo: propCo
             {/* Header section with professional styling */}
             <div className="text-center mb-4">
                 {companyInfo.logo && (
-                    <img src={companyInfo.logo} alt="Logo" className="max-w-[120px] mx-auto mb-3 grayscale" />
+                    <img src={companyInfo.logo} alt="Logo" className="max-w-[130px] max-h-[70px] object-contain mx-auto mb-2 grayscale" />
                 )}
                 <h1 className="text-xl font-black mb-1 uppercase tracking-wider">{companyInfo.name}</h1>
                 <div className="text-xs text-gray-800 leading-snug font-medium">

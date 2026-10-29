@@ -34,6 +34,7 @@ export default function ReceiptPrintPage() {
         email: s.email || '',
         taxNumber: s.taxRegistrationNumber || '',
         footer: s.receiptFooterMessage || 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.',
+        logo: s.logoUrl || '',
     };
 
     // Auto-print when invoice data is ready
@@ -118,6 +119,11 @@ export default function ReceiptPrintPage() {
             <div className="receipt-wrapper print-thermal-container" style={{ width: '80mm', margin: '0 auto', fontFamily: "'Courier New', monospace", fontSize: '13px', color: '#000', background: '#fff', padding: '12px' }}>
                 {/* Header */}
                 <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                    {company.logo && (
+                        <div style={{ marginBottom: '8px' }}>
+                            <img src={company.logo} alt="Logo" style={{ maxWidth: '120px', maxHeight: '65px', objectFit: 'contain', margin: '0 auto', filter: 'grayscale(100%)' }} />
+                        </div>
+                    )}
                     <div style={{ fontSize: '17px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>{company.name}</div>
                     {company.address && <div style={{ fontSize: '11px', marginTop: '2px' }}>{company.address}</div>}
                     {company.phone && <div style={{ fontSize: '11px' }}>TEL: {company.phone}</div>}

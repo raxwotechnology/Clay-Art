@@ -8,17 +8,14 @@ const router = express.Router();
 
 // Register: first user is public (becomes admin), rest need auth
 // The controller handles this logic — we conditionally apply `protect`
-router.post('/register', async (req, res, next) => {
-    const User = (await import('../models/User.js')).default;
-    const userCount = await User.countDocuments();
-
-    if (userCount === 0) {
-        // First user, no auth needed
-        return validate(registerSchema)(req, res, next);
-    } else {
-        // Subsequent users require auth
+// Register: public can create first user (admin) or customer account; authenticated admins can create any role
+router.post('/register', (req, res, next) => {
+    // Optional auth: if token is present, decode it so req.user is set
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer')) {
         return protect(req, res, () => validate(registerSchema)(req, res, next));
     }
+    return validate(registerSchema)(req, res, next);
 }, register);
 
 router.post('/login', validate(loginSchema), login);

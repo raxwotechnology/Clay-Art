@@ -7,7 +7,10 @@ const companySettingsSchema = new mongoose.Schema({
     email: { type: String, trim: true },
     website: { type: String, trim: true },
     taxRegistrationNumber: { type: String, trim: true },
-    receiptFooterMessage: { type: String, default: 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.', trim: true }
+    receiptFooterMessage: { type: String, default: 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.', trim: true },
+    logoUrl: { type: String, default: '' },
+    tagline: { type: String, default: 'BUSINESS MANAGEMENT SYSTEM', trim: true },
+    systemSubtitle: { type: String, default: 'Smart wholesale inventory, POS, and financial management.', trim: true }
 }, { timestamps: true });
 
 const CompanySettings = mongoose.model('CompanySettings', companySettingsSchema);

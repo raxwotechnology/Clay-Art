@@ -4,9 +4,9 @@ import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Both admins and regular users (like cashiers) need to be able to GET the settings to print receipts.
+// Public GET so Login page, public bills/receipts, and sidebars can display the company logo & name
 router.route('/company')
-    .get(protect, getCompanySettings)
+    .get(getCompanySettings)
     .put(protect, authorize('admin', 'manager'), updateCompanySettings);
 
 export default router;

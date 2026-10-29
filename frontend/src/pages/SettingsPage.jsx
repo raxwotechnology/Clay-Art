@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Settings, Save } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Settings, Save, Upload, Trash2, Image as ImageIcon, CheckCircle2, Eye, Building2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCompanySettings, useUpdateCompanySettings } from '../features/settings/useSettings';
 import Button from '../components/ui/Button';
@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 export default function SettingsPage() {
     const { data: settingsRes, isLoading } = useCompanySettings();
     const updateSettings = useUpdateCompanySettings();
+    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         companyName: '',
@@ -16,7 +17,12 @@ export default function SettingsPage() {
         website: '',
         taxRegistrationNumber: '',
         receiptFooterMessage: '',
+        logoUrl: '',
+        tagline: 'BUSINESS MANAGEMENT SYSTEM',
+        systemSubtitle: 'Smart wholesale inventory, POS, and financial management.',
     });
+
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         if (settingsRes?.data) {
@@ -29,6 +35,9 @@ export default function SettingsPage() {
                 website: s.website || '',
                 taxRegistrationNumber: s.taxRegistrationNumber || '',
                 receiptFooterMessage: s.receiptFooterMessage || '',
+                logoUrl: s.logoUrl || '',
+                tagline: s.tagline || 'BUSINESS MANAGEMENT SYSTEM',
+                systemSubtitle: s.systemSubtitle || 'Smart wholesale inventory, POS, and financial management.',
             });
         }
     }, [settingsRes]);
@@ -37,18 +46,76 @@ export default function SettingsPage() {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
+    const handleFileSelect = (file) => {
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please upload an image file (PNG, JPG, SVG, WebP)');
+            return;
+        }
+
+        // Limit file size to 3MB for optimal speed
+        if (file.size > 3 * 1024 * 1024) {
+            toast.error('Image size must be less than 3MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64Url = e.target.result;
+            setFormData(prev => ({ ...prev, logoUrl: base64Url }));
+            toast.success('Logo selected! Click "Save Settings" to apply.');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleFileInputChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFileSelect(file);
+        }
+    };
+
+    const handleRemoveLogo = () => {
+        setFormData(prev => ({ ...prev, logoUrl: '' }));
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        toast.success('Logo removed. Click "Save Settings" to apply.');
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            handleFileSelect(file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await updateSettings.mutateAsync(formData);
-            toast.success('Settings updated successfully');
+            toast.success('Company settings & Logo updated successfully!');
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update settings');
         }
     };
 
     if (isLoading) {
-        return <div className="p-6">Loading settings...</div>;
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="text-gray-500 font-medium animate-pulse">Loading settings...</div>
+            </div>
+        );
     }
 
     return (
@@ -56,27 +123,163 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Settings className="text-primary-600" />
-                        Company Settings
+                        <Settings className="text-indigo-600" />
+                        Company & Brand Settings
                     </h1>
-                    <p className="text-gray-500 mt-1">Manage your company details for receipts and invoices.</p>
+                    <p className="text-gray-500 mt-1">
+                        Configure your company brand, logo, receipts, bills, and login page branding.
+                    </p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* ── LOGO UPLOAD SECTION ── */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <ImageIcon className="text-indigo-600 w-5 h-5" />
+                        <h2 className="text-lg font-semibold text-gray-900">Company Logo</h2>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-6">
+                        This logo will appear on the <strong>Login page</strong>, <strong>Sidebar</strong>, and all printed <strong>Bills & Invoices</strong>.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                        {/* Current Logo Preview */}
+                        <div className="flex flex-col items-center justify-center p-5 bg-gray-50/80 rounded-2xl border border-gray-200">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Logo Preview</span>
+                            {formData.logoUrl ? (
+                                <div className="relative group">
+                                    <div className="w-36 h-36 bg-white rounded-xl shadow-inner border border-gray-100 p-2 flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src={formData.logoUrl}
+                                            alt="Company Logo Preview"
+                                            className="max-w-full max-h-full object-contain"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleRemoveLogo}
+                                        className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                                    >
+                                        <Trash2 size={14} /> Remove Logo
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <div className="w-20 h-20 mx-auto rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 mb-2">
+                                        <Building2 size={36} />
+                                    </div>
+                                    <p className="text-xs text-gray-400">No logo uploaded yet</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Drag and Drop Upload Box */}
+                        <div className="md:col-span-2">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                                onChange={handleFileInputChange}
+                                className="hidden"
+                                id="logo-file-input"
+                            />
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                                    isDragging
+                                        ? 'border-indigo-500 bg-indigo-50/50'
+                                        : 'border-gray-200 hover:border-indigo-400 hover:bg-gray-50/50'
+                                }`}
+                            >
+                                <div className="w-12 h-12 mx-auto rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+                                    <Upload size={22} />
+                                </div>
+                                <p className="text-sm font-semibold text-gray-700">
+                                    Click to upload or drag & drop logo here
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    PNG, JPG, SVG or WebP (Recommended transparent background, max 3MB)
+                                </p>
+                                <button
+                                    type="button"
+                                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-xl hover:bg-indigo-100 transition"
+                                >
+                                    <Upload size={14} /> Browse File
+                                </button>
+                            </div>
+
+                            {/* Or direct URL */}
+                            <div className="mt-3">
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Or paste Image URL:</label>
+                                <input
+                                    type="url"
+                                    name="logoUrl"
+                                    placeholder="https://example.com/logo.png"
+                                    value={formData.logoUrl}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-700"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── BRAND & COMPANY DETAILS ── */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Brand Identity & ERP Information</h2>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Company / Brand Name *</label>
                             <input
                                 type="text"
                                 name="companyName"
                                 required
                                 value={formData.companyName}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="e.g. Asipbook / Clay Art"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
+                            <p className="text-xs text-gray-400 mt-1">Shown across sidebar, top bar, bills & login header.</p>
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+                            <input
+                                type="text"
+                                name="tagline"
+                                value={formData.tagline}
+                                onChange={handleChange}
+                                placeholder="BUSINESS MANAGEMENT SYSTEM"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Shown below the logo on the login page.</p>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">System Subtitle (Login Page)</label>
+                            <input
+                                type="text"
+                                name="systemSubtitle"
+                                value={formData.systemSubtitle}
+                                onChange={handleChange}
+                                placeholder="Smart wholesale inventory, POS, and financial management."
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Describes your system under the hero title.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── CONTACT & BILLING DETAILS ── */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Contact & Billing Details</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                             <input
@@ -84,9 +287,23 @@ export default function SettingsPage() {
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="+94 11 XXX XXXX"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="contact@example.com"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                        </div>
+
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                             <input
@@ -94,19 +311,11 @@ export default function SettingsPage() {
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="Street, City, Country"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                            />
-                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
                             <input
@@ -114,19 +323,23 @@ export default function SettingsPage() {
                                 name="website"
                                 value={formData.website}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="www.yourcompany.com"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Tax / Registration Number</label>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tax / VAT Registration Number</label>
                             <input
                                 type="text"
                                 name="taxRegistrationNumber"
                                 value={formData.taxRegistrationNumber}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="VAT-XXXXXXXX"
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                         </div>
+
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Message</label>
                             <textarea
@@ -134,10 +347,10 @@ export default function SettingsPage() {
                                 rows={3}
                                 value={formData.receiptFooterMessage}
                                 onChange={handleChange}
-                                placeholder="E.g. Thank you for your business! Please visit again."
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="THANK YOU FOR YOUR BUSINESS!&#10;PLEASE VISIT AGAIN."
+                                className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm"
                             />
-                            <p className="text-xs text-gray-500 mt-1">This message will be printed at the bottom of thermal receipts.</p>
+                            <p className="text-xs text-gray-500 mt-1">This message will be printed at the bottom of thermal receipts and bills.</p>
                         </div>
                     </div>
 
@@ -146,8 +359,8 @@ export default function SettingsPage() {
                             <Save size={18} className="mr-2" /> Save Settings
                         </Button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     );
 }

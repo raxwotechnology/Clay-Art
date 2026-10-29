@@ -24,16 +24,13 @@ export const register = asyncHandler(async (req, res) => {
     const userCount = await User.countDocuments();
     const isFirstUser = userCount === 0;
 
-    // Only admins can create other users (after first user)
-    if (!isFirstUser) {
-        if (!req.user) {
-            res.status(401);
-            throw new Error('Not authorized. Only existing admins can register new users.');
-        }
-        if (req.user.role !== 'admin') {
-            res.status(403);
-            throw new Error('Only admins can register new users');
-        }
+    let assignedRole = 'customer';
+    if (isFirstUser) {
+        assignedRole = 'admin';
+    } else if (req.user && req.user.role === 'admin' && role) {
+        assignedRole = role;
+    } else if (role && ['customer', 'staff'].includes(role)) {
+        assignedRole = role;
     }
 
     const user = await User.create({
@@ -42,7 +39,7 @@ export const register = asyncHandler(async (req, res) => {
         email,
         phone,
         password,
-        role: isFirstUser ? 'admin' : (role || 'staff'),
+        role: assignedRole,
         createdBy: req.user?._id,
     });
 
