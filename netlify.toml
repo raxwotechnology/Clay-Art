@@ -6,6 +6,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  VITE_API_URL = "https://clay-art.onrender.com/api"
 
 [[redirects]]
   from = "/*"
