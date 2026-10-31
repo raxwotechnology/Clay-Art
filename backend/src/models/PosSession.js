@@ -8,6 +8,9 @@ const posSessionSchema = new mongoose.Schema({
     openingBalance: { type: Number, required: true, min: 0, default: 0 },
     
     cashSales: { type: Number, default: 0 },
+    cardSales: { type: Number, default: 0 },
+    bankSales: { type: Number, default: 0 },
+    chequeSales: { type: Number, default: 0 },
     cashExpenses: { type: Number, default: 0 },
     
     expectedClosingBalance: { type: Number, default: 0 },

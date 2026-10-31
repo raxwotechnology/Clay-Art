@@ -205,13 +205,21 @@ export const createSalesOrder = asyncHandler(async (req, res) => {
                 const PosSession = (await import('../models/PosSession.js')).default;
                 const BankAccount = (await import('../models/BankAccount.js')).default;
 
-                // Update BankAccount balance
-                const receivingAccount = await BankAccount.findOne({ category: 'received', isActive: true }).session(session);
-                let receivingAccountId = undefined;
-                if (receivingAccount) {
-                    receivingAccountId = receivingAccount._id;
-                    receivingAccount.currentBalance = +(receivingAccount.currentBalance + invoice.grandTotal).toFixed(2);
-                    await receivingAccount.save({ session });
+                const payMethod = order.paymentMethod || 'cash';
+
+                // Update BankAccount balance (for card, bank_transfer, cash)
+                let receivingAccountId = order.bankAccountId;
+                if (!receivingAccountId) {
+                    const defaultAcc = await BankAccount.findOne({ category: 'received', isActive: true }).session(session);
+                    if (defaultAcc) receivingAccountId = defaultAcc._id;
+                }
+
+                if (receivingAccountId) {
+                    const accDoc = await BankAccount.findById(receivingAccountId).session(session);
+                    if (accDoc) {
+                        accDoc.currentBalance = +(accDoc.currentBalance + invoice.grandTotal).toFixed(2);
+                        await accDoc.save({ session });
+                    }
                 }
                 
                 const payment = new Payment({
@@ -219,8 +227,12 @@ export const createSalesOrder = asyncHandler(async (req, res) => {
                     customerId: order.customerId,
                     partyName: order.customerSnapshot.name,
                     amount: invoice.grandTotal,
-                    method: 'cash',
+                    method: payMethod,
                     bankAccountId: receivingAccountId,
+                    transactionReference: order.transactionReference,
+                    bankName: order.bankName,
+                    chequeNumber: order.chequeNumber,
+                    chequeDate: order.chequeDate,
                     allocations: [{
                         documentType: 'invoice',
                         documentId: invoice._id,
@@ -233,22 +245,36 @@ export const createSalesOrder = asyncHandler(async (req, res) => {
                 });
                 await payment.save({ session });
                 
-                // Update Invoice payment status
+                // Update Invoice payment status & method details
                 invoice.amountPaid = invoice.grandTotal;
                 invoice.balanceDue = 0;
                 invoice.paymentStatus = 'paid';
                 invoice.fullyPaidAt = new Date();
-                invoice.cashReceived = order.cashReceived;
-                invoice.changeReturned = order.changeReturned;
+                invoice.paymentMethod = payMethod;
+                invoice.transactionReference = order.transactionReference;
+                invoice.bankName = order.bankName;
+                invoice.chequeNumber = order.chequeNumber;
+                invoice.chequeDate = order.chequeDate;
+                invoice.bankAccountId = receivingAccountId;
+                invoice.cashReceived = payMethod === 'cash' ? (order.cashReceived || invoice.grandTotal) : invoice.grandTotal;
+                invoice.changeReturned = payMethod === 'cash' ? (order.changeReturned || 0) : 0;
                 await invoice.save({ session });
 
                 // Recalculate customer credit balance to reflect payment
                 await updateCustomerBalance(order.customerId, session);
                 
-                // Update PosSession cashSales
+                // Update PosSession totals
                 const activeSession = await PosSession.findOne({ userId: req.user._id, status: 'open' }).session(session);
                 if (activeSession) {
-                    activeSession.cashSales += invoice.grandTotal;
+                    if (payMethod === 'cash') {
+                        activeSession.cashSales = (activeSession.cashSales || 0) + invoice.grandTotal;
+                    } else if (payMethod === 'card') {
+                        activeSession.cardSales = (activeSession.cardSales || 0) + invoice.grandTotal;
+                    } else if (payMethod === 'bank_transfer') {
+                        activeSession.bankSales = (activeSession.bankSales || 0) + invoice.grandTotal;
+                    } else if (payMethod === 'cheque') {
+                        activeSession.chequeSales = (activeSession.chequeSales || 0) + invoice.grandTotal;
+                    }
                     await activeSession.save({ session });
                 }
             }

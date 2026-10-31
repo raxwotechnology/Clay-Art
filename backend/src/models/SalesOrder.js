@@ -190,6 +190,17 @@ const salesOrderSchema = new mongoose.Schema(
         cashReceived: { type: Number },
         changeReturned: { type: Number },
 
+        paymentMethod: {
+            type: String,
+            enum: ['cash', 'card', 'bank_transfer', 'cheque', 'other'],
+            default: 'cash',
+        },
+        transactionReference: { type: String, trim: true },
+        bankName: { type: String, trim: true },
+        chequeNumber: { type: String, trim: true },
+        chequeDate: { type: Date },
+        bankAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'BankAccount' },
+
         createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         deletedAt: { type: Date, default: null },

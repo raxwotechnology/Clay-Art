@@ -151,6 +151,22 @@ const ThermalReceipt = forwardRef(({ invoice, payments = [], companyInfo: propCo
                             <span className="uppercase text-gray-600">Paid Amount</span>
                             <span className="font-bold">{fmt(totalPaid)}</span>
                         </div>
+                        <div className="flex justify-between text-xs mt-1 text-gray-700">
+                            <span className="uppercase text-gray-500">Method</span>
+                            <span className="font-semibold uppercase">{invoice.paymentMethod ? invoice.paymentMethod.replace('_', ' ') : 'Cash'}</span>
+                        </div>
+                        {invoice.transactionReference && (
+                            <div className="flex justify-between text-xs text-gray-700">
+                                <span className="uppercase text-gray-500">Ref / Slip</span>
+                                <span className="font-mono">{invoice.transactionReference}</span>
+                            </div>
+                        )}
+                        {invoice.chequeNumber && (
+                            <div className="flex justify-between text-xs text-gray-700">
+                                <span className="uppercase text-gray-500">Cheque #</span>
+                                <span className="font-mono">{invoice.chequeNumber}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between text-sm mt-1 pb-1 border-b border-dashed border-gray-400">
                             <span className="uppercase text-gray-600">Amount Due</span>
                             <span className="font-bold">{fmt(balanceDue)}</span>

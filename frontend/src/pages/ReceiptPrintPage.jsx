@@ -215,13 +215,29 @@ export default function ReceiptPrintPage() {
                         <span style={{ textTransform: 'uppercase', color: '#555', fontSize: '10px' }}>Paid Amount</span>
                         <span style={{ fontWeight: '700' }}>{fmt(invoice.grandTotal)}</span>
                     </div>
-                    {invoice.cashReceived !== undefined && invoice.cashReceived > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px', fontSize: '12px' }}>
+                        <span style={{ textTransform: 'uppercase', color: '#555', fontSize: '10px' }}>Payment Method</span>
+                        <span style={{ fontWeight: '700', textTransform: 'uppercase' }}>{invoice.paymentMethod ? invoice.paymentMethod.replace('_', ' ') : 'Cash'}</span>
+                    </div>
+                    {invoice.transactionReference && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#444' }}>
+                            <span style={{ textTransform: 'uppercase', fontSize: '10px' }}>Ref / Slip</span>
+                            <span>{invoice.transactionReference}</span>
+                        </div>
+                    )}
+                    {invoice.chequeNumber && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#444' }}>
+                            <span style={{ textTransform: 'uppercase', fontSize: '10px' }}>Cheque #</span>
+                            <span>{invoice.chequeNumber}</span>
+                        </div>
+                    )}
+                    {(!invoice.paymentMethod || invoice.paymentMethod === 'cash') && invoice.cashReceived !== undefined && invoice.cashReceived > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                             <span style={{ textTransform: 'uppercase', color: '#555', fontSize: '10px' }}>Cash Received</span>
                             <span style={{ fontWeight: '700' }}>{fmt(invoice.cashReceived)}</span>
                         </div>
                     )}
-                    {invoice.changeReturned !== undefined && invoice.changeReturned > 0 && (
+                    {(!invoice.paymentMethod || invoice.paymentMethod === 'cash') && invoice.changeReturned !== undefined && invoice.changeReturned > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                             <span style={{ textTransform: 'uppercase', color: '#555', fontSize: '10px' }}>Change Returned</span>
                             <span style={{ fontWeight: '700' }}>{fmt(invoice.changeReturned)}</span>

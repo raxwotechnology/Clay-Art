@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
     Search, Plus, Minus, Trash2, ShoppingCart, Save, X,
     Package, AlertCircle, UserPlus, PackagePlus, CreditCard,
-    CheckCircle, ArrowLeft, LayoutGrid, List
+    CheckCircle, ArrowLeft, LayoutGrid, List, Landmark, Banknote, FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -69,6 +69,12 @@ export default function PosPage() {
     const [isCalculatorModalOpen, setIsCalculatorModalOpen] = useState(false);
     const [calculatorCashReceived, setCalculatorCashReceived] = useState('');
     const [calculatorChangeReturned, setCalculatorChangeReturned] = useState(0);
+    const [posPaymentMethod, setPosPaymentMethod] = useState('cash'); // 'cash' | 'card' | 'bank_transfer' | 'cheque'
+    const [posBankAccountId, setPosBankAccountId] = useState('');
+    const [posTransactionRef, setPosTransactionRef] = useState('');
+    const [posBankName, setPosBankName] = useState('');
+    const [posChequeNumber, setPosChequeNumber] = useState('');
+    const [posChequeDate, setPosChequeDate] = useState(new Date().toISOString().split('T')[0]);
 
     // Direct Printing
     const [recentInvoice, setRecentInvoice] = useState(null);
@@ -81,6 +87,11 @@ export default function PosPage() {
         retry: false
     });
     const activeSession = activeSessionData?.data;
+    const { data: bankAccountsData } = useQuery({
+        queryKey: ['bank-accounts'],
+        queryFn: async () => (await api.get('/bank-accounts')).data
+    });
+    const bankAccounts = bankAccountsData?.data || [];
     const { data: warehousesData } = useWarehouses({ isActive: true });
     const { data: customersData } = useQuery({
         queryKey: ['customers', 'active'],
@@ -297,7 +308,7 @@ export default function PosPage() {
 
     const fmt = (n) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 2 }).format(n || 0);
 
-    const handleCheckout = async (saveAsDraft = false, cashAmt = null, changeAmt = null) => {
+    const handleCheckout = async (saveAsDraft = false, paymentInfo = null) => {
         let finalCustomerId = customerId;
 
         // Auto-add customer if not selected but name typed
@@ -325,12 +336,16 @@ export default function PosPage() {
         if (cart.length === 0) { toast.error('Cart is empty'); return; }
         if (!activeSession) { toast.error('You must open the cash register first'); setIsSessionModalOpen(true); return; }
 
-        if (!saveAsDraft && cashAmt === null) {
-            setCalculatorCashReceived('');
+        if (!saveAsDraft && paymentInfo === null) {
+            setCalculatorCashReceived(totals.grandTotal.toString());
             setCalculatorChangeReturned(0);
             setIsCalculatorModalOpen(true);
             return;
         }
+
+        const isCash = !paymentInfo || paymentInfo.method === 'cash';
+        const cashAmt = isCash ? (paymentInfo?.cashReceived || totals.grandTotal) : totals.grandTotal;
+        const changeAmt = isCash ? (paymentInfo?.changeReturned || 0) : 0;
 
         const payload = {
             customerId: finalCustomerId,
@@ -346,8 +361,14 @@ export default function PosPage() {
                 ? { type: 'fixed', value: totals.orderDiscount }
                 : undefined,
             status: saveAsDraft ? 'draft' : 'approved',
-            cashReceived: saveAsDraft ? undefined : (cashAmt || 0),
-            changeReturned: saveAsDraft ? undefined : (changeAmt || 0),
+            paymentMethod: saveAsDraft ? undefined : (paymentInfo?.method || 'cash'),
+            cashReceived: saveAsDraft ? undefined : cashAmt,
+            changeReturned: saveAsDraft ? undefined : changeAmt,
+            transactionReference: saveAsDraft ? undefined : paymentInfo?.transactionReference,
+            bankName: saveAsDraft ? undefined : paymentInfo?.bankName,
+            chequeNumber: saveAsDraft ? undefined : paymentInfo?.chequeNumber,
+            chequeDate: saveAsDraft ? undefined : paymentInfo?.chequeDate,
+            bankAccountId: saveAsDraft ? undefined : paymentInfo?.bankAccountId,
         };
 
         try {
@@ -843,111 +864,321 @@ export default function PosPage() {
             <Modal
                 isOpen={isCalculatorModalOpen}
                 onClose={() => setIsCalculatorModalOpen(false)}
-                title="POS Cash Payment Calculator"
+                title="POS Payment & Checkout"
                 size="md"
             >
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-5">
                     {/* Grand Total Display */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100 flex justify-between items-center">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 flex justify-between items-center">
                         <div>
                             <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Total Payable</p>
-                            <p className="text-3xl font-extrabold text-indigo-950 mt-1">{fmt(totals.grandTotal)}</p>
+                            <p className="text-2xl font-bold text-indigo-950 mt-0.5">{fmt(totals.grandTotal)}</p>
                         </div>
-                        <div className="bg-indigo-500 text-white rounded-lg p-2.5 shadow-md shadow-indigo-200">
-                            <CreditCard size={28} />
-                        </div>
-                    </div>
-
-                    {/* Cash Received Input */}
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">Cash Received (LKR)</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">Rs.</span>
-                            <input
-                                type="number"
-                                step="any"
-                                autoFocus
-                                placeholder="0.00"
-                                value={calculatorCashReceived}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setCalculatorCashReceived(val);
-                                    const parsed = parseFloat(val) || 0;
-                                    setCalculatorChangeReturned(Math.max(0, parsed - totals.grandTotal));
-                                }}
-                                className="w-full bg-white border border-gray-300 rounded-lg py-3.5 pl-12 pr-4 text-2xl font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
-                            />
+                        <div className="bg-indigo-600 text-white rounded-xl p-2.5 shadow-sm shadow-indigo-200">
+                            <CreditCard size={24} />
                         </div>
                     </div>
 
-                    {/* Quick Cash Buttons */}
-                    <div className="space-y-2">
-                        <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Cash Shortcuts</span>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {/* Payment Method Selector */}
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            Select Payment Method
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setCalculatorCashReceived(totals.grandTotal.toString());
-                                    setCalculatorChangeReturned(0);
-                                }}
-                                className="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-lg transition duration-200 border border-gray-200 active:scale-95"
+                                onClick={() => setPosPaymentMethod('cash')}
+                                className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-xs font-semibold transition ${
+                                    posPaymentMethod === 'cash'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
                             >
-                                Exact Cash
+                                <Banknote size={16} />
+                                <span>Cash</span>
                             </button>
-                            {[1000, 2000, 5000, 10000].map((denom) => (
-                                <button
-                                    key={denom}
-                                    type="button"
-                                    onClick={() => {
-                                        setCalculatorCashReceived(denom.toString());
-                                        setCalculatorChangeReturned(Math.max(0, denom - totals.grandTotal));
-                                    }}
-                                    className="py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition duration-200 border border-indigo-100 active:scale-95"
-                                >
-                                    {denom.toLocaleString('en-LK')}
-                                </button>
-                            ))}
+
+                            <button
+                                type="button"
+                                onClick={() => setPosPaymentMethod('card')}
+                                className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-xs font-semibold transition ${
+                                    posPaymentMethod === 'card'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                <CreditCard size={16} />
+                                <span>Card</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setPosPaymentMethod('bank_transfer')}
+                                className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-xs font-semibold transition ${
+                                    posPaymentMethod === 'bank_transfer'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                <Landmark size={16} />
+                                <span>Bank Transfer</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setPosPaymentMethod('cheque')}
+                                className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-xs font-semibold transition ${
+                                    posPaymentMethod === 'cheque'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                <FileText size={16} />
+                                <span>Cheque</span>
+                            </button>
                         </div>
                     </div>
 
-                    {/* Change Returned Display */}
-                    <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-100 flex justify-between items-center">
-                        <div>
-                            <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Change to Return</p>
-                            <p className="text-3xl font-extrabold text-emerald-950 mt-1">{fmt(calculatorChangeReturned)}</p>
-                        </div>
-                        <div className="bg-emerald-500 text-white rounded-lg p-2.5 shadow-md shadow-emerald-200">
-                            <CheckCircle size={28} />
-                        </div>
-                    </div>
+                    {/* METHOD 1: CASH */}
+                    {posPaymentMethod === 'cash' && (
+                        <div className="space-y-4 pt-1">
+                            {/* Cash Received Input */}
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-medium text-gray-700">Cash Received (LKR)</label>
+                                <div className="relative">
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">Rs.</span>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        autoFocus
+                                        placeholder="0.00"
+                                        value={calculatorCashReceived}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setCalculatorCashReceived(val);
+                                            const parsed = parseFloat(val) || 0;
+                                            setCalculatorChangeReturned(Math.max(0, parsed - totals.grandTotal));
+                                        }}
+                                        className="w-full bg-white border border-gray-300 rounded-xl py-2.5 pl-11 pr-4 text-xl font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Insufficient Cash Warning */}
-                    {calculatorCashReceived && (parseFloat(calculatorCashReceived) || 0) < totals.grandTotal && (
-                        <div className="flex items-center gap-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">
-                            <AlertCircle size={18} />
-                            <span>Cash received is less than total payable!</span>
+                            {/* Quick Cash Buttons */}
+                            <div className="space-y-1.5">
+                                <span className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Quick Cash Shortcuts</span>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCalculatorCashReceived(totals.grandTotal.toString());
+                                            setCalculatorChangeReturned(0);
+                                        }}
+                                        className="py-1.5 px-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-medium rounded-lg transition border border-gray-200 active:scale-95"
+                                    >
+                                        Exact Cash
+                                    </button>
+                                    {[1000, 2000, 5000, 10000].map((denom) => (
+                                        <button
+                                            key={denom}
+                                            type="button"
+                                            onClick={() => {
+                                                setCalculatorCashReceived(denom.toString());
+                                                setCalculatorChangeReturned(Math.max(0, denom - totals.grandTotal));
+                                            }}
+                                            className="py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium rounded-lg transition border border-indigo-100 active:scale-95"
+                                        >
+                                            {denom.toLocaleString('en-LK')}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Change Returned Display */}
+                            <div className="bg-emerald-50 rounded-xl p-3.5 border border-emerald-100 flex justify-between items-center">
+                                <div>
+                                    <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Change to Return</p>
+                                    <p className="text-xl font-bold text-emerald-950 mt-0.5">{fmt(calculatorChangeReturned)}</p>
+                                </div>
+                                <div className="bg-emerald-500 text-white rounded-lg p-2 shadow-sm shadow-emerald-200">
+                                    <CheckCircle size={20} />
+                                </div>
+                            </div>
+
+                            {calculatorCashReceived && (parseFloat(calculatorCashReceived) || 0) < totals.grandTotal && (
+                                <div className="flex items-center gap-2 text-xs font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg p-2.5">
+                                    <AlertCircle size={16} />
+                                    <span>Cash received is less than total payable!</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* METHOD 2: CARD */}
+                    {posPaymentMethod === 'card' && (
+                        <div className="space-y-3.5 pt-1">
+                            <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between text-xs">
+                                <span className="text-gray-600">Card Payment Amount:</span>
+                                <span className="font-bold text-blue-900 text-sm">{fmt(totals.grandTotal)}</span>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Card / Terminal Reference / Approval Code</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Auth Code / Slip # 49201"
+                                    value={posTransactionRef}
+                                    onChange={(e) => setPosTransactionRef(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+
+                            {bankAccounts.length > 0 && (
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Deposit To Bank Account</label>
+                                    <select
+                                        value={posBankAccountId}
+                                        onChange={(e) => setPosBankAccountId(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">Default POS Terminal Account</option>
+                                        {bankAccounts.map(b => (
+                                            <option key={b._id} value={b._id}>
+                                                {b.accountName} - {b.bankName} ({b.accountNumber})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* METHOD 3: BANK TRANSFER */}
+                    {posPaymentMethod === 'bank_transfer' && (
+                        <div className="space-y-3.5 pt-1">
+                            <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-xl flex items-center justify-between text-xs">
+                                <span className="text-gray-600">Transfer Amount:</span>
+                                <span className="font-bold text-purple-900 text-sm">{fmt(totals.grandTotal)}</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Customer Bank Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Commercial / BOC / Sampath"
+                                        value={posBankName}
+                                        onChange={(e) => setPosBankName(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Transfer Ref / Slip No.</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. TXN9872145"
+                                        value={posTransactionRef}
+                                        onChange={(e) => setPosTransactionRef(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {bankAccounts.length > 0 && (
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Receiving Bank Account</label>
+                                    <select
+                                        value={posBankAccountId}
+                                        onChange={(e) => setPosBankAccountId(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">Default Business Account</option>
+                                        {bankAccounts.map(b => (
+                                            <option key={b._id} value={b._id}>
+                                                {b.accountName} - {b.bankName} ({b.accountNumber})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* METHOD 4: CHEQUE */}
+                    {posPaymentMethod === 'cheque' && (
+                        <div className="space-y-3.5 pt-1">
+                            <div className="p-3 bg-amber-50/70 border border-amber-100 rounded-xl flex items-center justify-between text-xs">
+                                <span className="text-gray-600">Cheque Amount:</span>
+                                <span className="font-bold text-amber-900 text-sm">{fmt(totals.grandTotal)}</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Cheque Number *</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. CHQ-482910"
+                                        value={posChequeNumber}
+                                        onChange={(e) => setPosChequeNumber(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Cheque Date</label>
+                                    <input
+                                        type="date"
+                                        value={posChequeDate}
+                                        onChange={(e) => setPosChequeDate(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Bank & Branch Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. HNB - Kollupitiya"
+                                    value={posBankName}
+                                    onChange={(e) => setPosBankName(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
                         </div>
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-3 border-t">
                         <Button
                             variant="outline"
-                            className="flex-1 py-3"
+                            className="flex-1 py-2.5"
                             onClick={() => setIsCalculatorModalOpen(false)}
                         >
                             Cancel
                         </Button>
                         <Button
                             variant="primary"
-                            className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white"
-                            disabled={!calculatorCashReceived || (parseFloat(calculatorCashReceived) || 0) < totals.grandTotal || createOrder.isLoading}
+                            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                            disabled={
+                                (posPaymentMethod === 'cash' && (!calculatorCashReceived || (parseFloat(calculatorCashReceived) || 0) < totals.grandTotal)) ||
+                                (posPaymentMethod === 'cheque' && !posChequeNumber.trim()) ||
+                                createOrder.isLoading
+                            }
                             onClick={async () => {
                                 setIsCalculatorModalOpen(false);
-                                await handleCheckout(false, parseFloat(calculatorCashReceived), calculatorChangeReturned);
+                                await handleCheckout(false, {
+                                    method: posPaymentMethod,
+                                    cashReceived: posPaymentMethod === 'cash' ? parseFloat(calculatorCashReceived) : totals.grandTotal,
+                                    changeReturned: posPaymentMethod === 'cash' ? calculatorChangeReturned : 0,
+                                    transactionReference: posTransactionRef || undefined,
+                                    bankName: posBankName || undefined,
+                                    chequeNumber: posChequeNumber || undefined,
+                                    chequeDate: posChequeDate || undefined,
+                                    bankAccountId: posBankAccountId || undefined,
+                                });
                             }}
                         >
-                            {createOrder.isLoading ? 'Checking out...' : 'Confirm & Pay'}
+                            {createOrder.isLoading ? 'Processing...' : 'Confirm & Complete Sale'}
                         </Button>
                     </div>
                 </div>
