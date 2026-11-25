@@ -87,7 +87,7 @@ const authLimiter = rateLimit({
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'Asipbook ERP Backend API is running',
+        message: 'New Gunasinghe Hardware ERP Backend API is running',
         health: '/api/health',
         timestamp: new Date().toISOString(),
     });

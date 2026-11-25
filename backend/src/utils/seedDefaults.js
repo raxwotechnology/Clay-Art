@@ -4,6 +4,7 @@ import CustomerGroup from '../models/CustomerGroup.js';
 import Warehouse from '../models/Warehouse.js';
 import Holiday from '../models/Holiday.js';
 import User from '../models/User.js';
+import CompanySettings from '../models/CompanySettings.js';
 
 const defaultUoms = [
     { name: 'Piece', symbol: 'pc', type: 'count' },
@@ -191,6 +192,25 @@ export const seedDefaults = async () => {
 
         await seedAdminUser();
         await seedSriLankaHolidays();
+
+        const existingSettings = await CompanySettings.findOne();
+        if (!existingSettings) {
+            await CompanySettings.create({
+                companyName: 'New Gunasinghe Hardware',
+                email: 'gunasinghehardware@gmail.com',
+                tagline: 'HARDWARE & WHOLESALE MANAGEMENT',
+                receiptFooterMessage: 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.',
+            });
+            console.log('✓ Seeded default Company Settings (New Gunasinghe Hardware)');
+        } else if (!existingSettings.companyName || existingSettings.companyName === 'YOUR COMPANY NAME' || existingSettings.companyName === 'RC Traders' || existingSettings.companyName === 'Asipbook') {
+            existingSettings.companyName = 'New Gunasinghe Hardware';
+            existingSettings.email = 'gunasinghehardware@gmail.com';
+            await existingSettings.save();
+            console.log('✓ Updated Company Settings name to New Gunasinghe Hardware');
+        } else if (!existingSettings.email) {
+            existingSettings.email = 'gunasinghehardware@gmail.com';
+            await existingSettings.save();
+        }
 
     } catch (error) {
         console.error('Seed error:', error.message);

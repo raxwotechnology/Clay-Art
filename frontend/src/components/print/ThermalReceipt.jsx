@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { useCompanySettings } from '../../features/settings/useSettings';
+import defaultLogo from '../../images/logo.jpg';
 
 const fmt = (n) => new Intl.NumberFormat('en-LK', {
     style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2
@@ -21,14 +22,14 @@ const ThermalReceipt = forwardRef(({ invoice, payments = [], companyInfo: propCo
     // Use settings from DB, or fallback to props, or fallback to defaults
     const s = settingsRes?.data || {};
     const companyInfo = propCompanyInfo?.name ? propCompanyInfo : {
-        name: s.companyName || 'YOUR COMPANY NAME',
+        name: s.companyName || 'New Gunasinghe Hardware',
         address: s.address || 'YOUR STREET, CITY',
         phone: s.phone || '+94 11 XXX XXXX',
         taxNumber: s.taxRegistrationNumber,
-        email: s.email,
+        email: s.email || 'gunasinghehardware@gmail.com',
         website: s.website,
         footerMessage: s.receiptFooterMessage || 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.',
-        logo: s.logoUrl || propCompanyInfo?.logo || ''
+        logo: s.logoUrl || propCompanyInfo?.logo || defaultLogo
     };
 
     const customer = invoice.customerSnapshot || {};
@@ -56,7 +57,7 @@ const ThermalReceipt = forwardRef(({ invoice, payments = [], companyInfo: propCo
             {/* Header section with professional styling */}
             <div className="text-center mb-4">
                 {companyInfo.logo && (
-                    <img src={companyInfo.logo} alt="Logo" className="max-w-[130px] max-h-[70px] object-contain mx-auto mb-2 grayscale" />
+                    <img src={companyInfo.logo} alt="Logo" className="max-w-[200px] max-h-[100px] object-contain mx-auto mb-2 grayscale" />
                 )}
                 <h1 className="text-xl font-black mb-1 uppercase tracking-wider">{companyInfo.name}</h1>
                 <div className="text-xs text-gray-800 leading-snug font-medium">

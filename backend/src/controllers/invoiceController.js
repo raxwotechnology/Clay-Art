@@ -454,7 +454,7 @@ export const getInvoicePrintJson = asyncHandler(async (req, res) => {
     }
 
     const settings = (await CompanySettings.findOne()) || {
-        companyName: 'RC TRADERS',
+        companyName: 'New Gunasinghe Hardware',
         address: 'Colombo, Sri Lanka',
         phone: '+94 11 XXX XXXX',
         receiptFooterMessage: 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.'

@@ -2,10 +2,16 @@ import { useState } from 'react';
 import { Search, Package, Info, ArrowLeft, LogOut, ShoppingBag, ChevronRight, Tag, X, LayoutGrid, List } from 'lucide-react';
 import { useProducts } from '../features/products/useProducts';
 import { useAuthStore } from '../store/authStore';
+import { useCompanySettings } from '../features/settings/useSettings';
 import Button from '../components/ui/Button';
+import defaultLogo from '../images/logo.jpg';
 
 export default function PriceCheckerPage() {
     const { logout, user } = useAuthStore();
+    const { data: settingsRes } = useCompanySettings();
+    const companySettings = settingsRes?.data || {};
+    const companyName = companySettings.companyName || 'New Gunasinghe Hardware';
+    const logoUrl = companySettings.logoUrl || defaultLogo;
     const [search, setSearch] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -35,10 +41,10 @@ export default function PriceCheckerPage() {
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-3 flex justify-between items-center shadow-sm">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
-                        <Package className="w-6 h-6 text-white" />
+                    <div className="h-12 max-w-[140px] bg-white border border-gray-200/80 rounded-xl flex items-center justify-center shadow-sm overflow-hidden p-1">
+                        <img src={logoUrl} alt={companyName} className="max-w-full max-h-full object-contain" />
                     </div>
-                    <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">RISHAN <span className="text-primary-600">WHOLESALE</span></h1>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight leading-none">{companyName}</h1>
                 </div>
                 
                 <button 
@@ -204,7 +210,7 @@ export default function PriceCheckerPage() {
             </main>
 
             <footer className="p-8 text-center mt-auto">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-40">RISHAN WHOLESALE ERP</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-40">New Gunasinghe Hardware ERP</p>
             </footer>
         </div>
     );

@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { useCompanySettings } from '../../features/settings/useSettings';
+import defaultLogo from '../../images/logo.jpg';
 
 const fmt = (n) => new Intl.NumberFormat('en-LK', {
     style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2
@@ -22,13 +23,13 @@ const PrintableInvoice = forwardRef(({ invoice, payments = [], companyInfo: prop
 
     const s = settingsRes?.data || {};
     const companyInfo = propCompanyInfo?.name ? propCompanyInfo : {
-        name: s.companyName || 'YOUR COMPANY NAME',
+        name: s.companyName || 'New Gunasinghe Hardware',
         address: s.address || 'YOUR STREET, CITY',
         phone: s.phone || '+94 11 XXX XXXX',
         taxNumber: s.taxRegistrationNumber,
-        email: s.email,
+        email: s.email || 'gunasinghehardware@gmail.com',
         website: s.website,
-        logo: s.logoUrl
+        logo: propCompanyInfo?.logo || s.logoUrl || defaultLogo
     };
 
     const customer = invoice.customerSnapshot || {};
@@ -53,9 +54,9 @@ const PrintableInvoice = forwardRef(({ invoice, payments = [], companyInfo: prop
             <div className="flex justify-between items-start mb-8 pb-4 border-b-2 border-gray-800">
                 <div>
                     {companyInfo?.logo && (
-                        <img src={companyInfo.logo} alt="Logo" className="h-16 mb-2" />
+                        <img src={companyInfo.logo} alt="Logo" className="h-24 max-w-[280px] object-contain mb-3" />
                     )}
-                    <h1 className="text-2xl font-bold">{companyInfo?.name || 'Your Company'}</h1>
+                    <h1 className="text-2xl font-bold">{companyInfo?.name || 'New Gunasinghe Hardware'}</h1>
                     {companyInfo?.address && <p className="text-sm">{companyInfo.address}</p>}
                     {companyInfo?.taxNumber && <p className="text-sm">Tax No: {companyInfo.taxNumber}</p>}
                     <p className="text-sm">

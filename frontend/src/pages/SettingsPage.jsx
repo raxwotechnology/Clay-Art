@@ -3,6 +3,7 @@ import { Settings, Save, Upload, Trash2, Image as ImageIcon, CheckCircle2, Eye, 
 import { toast } from 'react-hot-toast';
 import { useCompanySettings, useUpdateCompanySettings } from '../features/settings/useSettings';
 import Button from '../components/ui/Button';
+import defaultLogo from '../images/logo.jpg';
 
 export default function SettingsPage() {
     const { data: settingsRes, isLoading } = useCompanySettings();
@@ -10,16 +11,16 @@ export default function SettingsPage() {
     const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
-        companyName: '',
+        companyName: 'New Gunasinghe Hardware',
         address: '',
         phone: '',
-        email: '',
+        email: 'gunasinghehardware@gmail.com',
         website: '',
         taxRegistrationNumber: '',
         receiptFooterMessage: '',
-        logoUrl: '',
-        tagline: 'BUSINESS MANAGEMENT SYSTEM',
-        systemSubtitle: 'Smart wholesale inventory, POS, and financial management.',
+        logoUrl: defaultLogo,
+        tagline: 'HARDWARE & WHOLESALE MANAGEMENT',
+        systemSubtitle: 'Smart hardware inventory, POS, and financial management.',
     });
 
     const [isDragging, setIsDragging] = useState(false);
@@ -28,16 +29,16 @@ export default function SettingsPage() {
         if (settingsRes?.data) {
             const s = settingsRes.data;
             setFormData({
-                companyName: s.companyName || '',
+                companyName: s.companyName || 'New Gunasinghe Hardware',
                 address: s.address || '',
                 phone: s.phone || '',
-                email: s.email || '',
+                email: s.email || 'gunasinghehardware@gmail.com',
                 website: s.website || '',
                 taxRegistrationNumber: s.taxRegistrationNumber || '',
                 receiptFooterMessage: s.receiptFooterMessage || '',
-                logoUrl: s.logoUrl || '',
-                tagline: s.tagline || 'BUSINESS MANAGEMENT SYSTEM',
-                systemSubtitle: s.systemSubtitle || 'Smart wholesale inventory, POS, and financial management.',
+                logoUrl: s.logoUrl || defaultLogo,
+                tagline: s.tagline || 'HARDWARE & WHOLESALE MANAGEMENT',
+                systemSubtitle: s.systemSubtitle || 'Smart hardware inventory, POS, and financial management.',
             });
         }
     }, [settingsRes]);
@@ -149,7 +150,7 @@ export default function SettingsPage() {
                             <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Logo Preview</span>
                             {formData.logoUrl ? (
                                 <div className="relative group">
-                                    <div className="w-36 h-36 bg-white rounded-xl shadow-inner border border-gray-100 p-2 flex items-center justify-center overflow-hidden">
+                                    <div className="w-52 h-36 bg-white rounded-xl shadow-inner border border-gray-100 p-2 flex items-center justify-center overflow-hidden">
                                         <img
                                             src={formData.logoUrl}
                                             alt="Company Logo Preview"
@@ -241,7 +242,7 @@ export default function SettingsPage() {
                                 required
                                 value={formData.companyName}
                                 onChange={handleChange}
-                                placeholder="e.g. Asipbook / Clay Art"
+                                placeholder="e.g. New Gunasinghe Hardware"
                                 className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                             <p className="text-xs text-gray-400 mt-1">Shown across sidebar, top bar, bills & login header.</p>
@@ -299,7 +300,7 @@ export default function SettingsPage() {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
-                                placeholder="contact@example.com"
+                                placeholder="gunasinghehardware@gmail.com"
                                 className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                         </div>

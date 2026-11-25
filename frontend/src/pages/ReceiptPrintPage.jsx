@@ -5,6 +5,7 @@ import { Printer, ArrowLeft, FileText } from 'lucide-react';
 import { invoicesApi } from '../features/invoices/invoicesApi';
 import { useCompanySettings } from '../features/settings/useSettings';
 import { getBluetoothPrintUrl } from '../utils/printHelpers';
+import defaultLogo from '../images/logo.jpg';
 
 const fmt = (n) => new Intl.NumberFormat('en-LK', {
     minimumFractionDigits: 2, maximumFractionDigits: 2
@@ -28,13 +29,13 @@ export default function ReceiptPrintPage() {
     const invoice = invoiceRes?.data;
     const s = settingsRes?.data || {};
     const company = {
-        name: s.companyName || 'YOUR COMPANY NAME',
+        name: s.companyName || 'New Gunasinghe Hardware',
         address: s.address || '',
         phone: s.phone || '',
-        email: s.email || '',
+        email: s.email || 'gunasinghehardware@gmail.com',
         taxNumber: s.taxRegistrationNumber || '',
         footer: s.receiptFooterMessage || 'THANK YOU FOR YOUR BUSINESS!\nPLEASE VISIT AGAIN.',
-        logo: s.logoUrl || '',
+        logo: s.logoUrl || defaultLogo,
     };
 
     // Auto-print when invoice data is ready
@@ -121,7 +122,7 @@ export default function ReceiptPrintPage() {
                 <div style={{ textAlign: 'center', marginBottom: '12px' }}>
                     {company.logo && (
                         <div style={{ marginBottom: '8px' }}>
-                            <img src={company.logo} alt="Logo" style={{ maxWidth: '120px', maxHeight: '65px', objectFit: 'contain', margin: '0 auto', filter: 'grayscale(100%)' }} />
+                            <img src={company.logo} alt="Logo" style={{ maxWidth: '180px', maxHeight: '90px', objectFit: 'contain', margin: '0 auto', filter: 'grayscale(100%)' }} />
                         </div>
                     )}
                     <div style={{ fontSize: '17px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>{company.name}</div>

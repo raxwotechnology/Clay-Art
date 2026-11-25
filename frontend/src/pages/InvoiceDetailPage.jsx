@@ -93,11 +93,11 @@ export default function InvoiceDetailPage() {
 
     // Hard-code your company info for now (we'll move to settings later)
     const companyInfo = {
-        name: 'Your Company Name',
+        name: 'New Gunasinghe Hardware',
         address: 'Your Street, City',
         taxNumber: 'TAX-12345',
         phone: '+94 11 XXX XXXX',
-        email: 'info@yourcompany.lk',
+        email: 'gunasinghehardware@gmail.com',
     };
 
     return (

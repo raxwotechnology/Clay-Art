@@ -9,7 +9,11 @@ export const getCompanySettings = asyncHandler(async (req, res) => {
     let settings = await CompanySettings.findOne();
 
     if (!settings) {
-        settings = await CompanySettings.create({});
+        settings = await CompanySettings.create({
+            companyName: 'New Gunasinghe Hardware',
+            email: 'gunasinghehardware@gmail.com',
+            tagline: 'HARDWARE & WHOLESALE MANAGEMENT',
+        });
     }
 
     res.status(200).json({ success: true, data: settings });

@@ -269,7 +269,7 @@ export default function BankAccountsPage() {
                     />
                     <Input disabled={isView} label="Bank Name" required placeholder="e.g., Bank of Ceylon" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} />
                     <Input disabled={isView} label="Branch Name" placeholder="e.g., Colombo Main" value={formData.branchName} onChange={(e) => setFormData({...formData, branchName: e.target.value})} />
-                    <Input disabled={isView} label="Account Name" required placeholder="e.g., Rishan Wholesale Main" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})} />
+                    <Input disabled={isView} label="Account Name" required placeholder="e.g., New Gunasinghe Hardware Main" value={formData.accountName} onChange={(e) => setFormData({...formData, accountName: e.target.value})} />
                     <Input disabled={isView} label="Account Number" required placeholder="e.g., 0012345678" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} />
                     <Input disabled={isView} type="number" label="Current Balance (LKR)" placeholder="e.g., 50000" value={formData.currentBalance} onChange={(e) => setFormData({...formData, currentBalance: Number(e.target.value) || 0})} />
                     

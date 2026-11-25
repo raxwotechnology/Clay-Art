@@ -16,6 +16,7 @@ import {
 import { authApi } from '../features/auth/authApi';
 import { useAuthStore } from '../store/authStore';
 import { useCompanySettings } from '../features/settings/useSettings';
+import defaultLogo from '../images/logo.jpg';
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -23,10 +24,10 @@ export default function LoginPage() {
     const { data: settingsRes } = useCompanySettings();
 
     const companySettings = settingsRes?.data || {};
-    const companyName = companySettings.companyName || 'Asipbook';
-    const tagline = companySettings.tagline || 'BUSINESS MANAGEMENT SYSTEM';
+    const companyName = companySettings.companyName || 'New Gunasinghe Hardware';
+    const tagline = companySettings.tagline || 'HARDWARE & WHOLESALE MANAGEMENT';
     const subtitle = companySettings.systemSubtitle || 'Smart wholesale inventory, POS, and financial management.';
-    const logoUrl = companySettings.logoUrl;
+    const logoUrl = companySettings.logoUrl || defaultLogo;
 
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
@@ -121,14 +122,24 @@ export default function LoginPage() {
                 <div className="lg:col-span-6 flex flex-col justify-center space-y-7 pr-0 lg:pr-4 text-left">
                     
                     {/* Brand Lockup */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         {logoUrl ? (
-                            <div className="h-12 max-w-[200px] flex items-center justify-start">
-                                <img
-                                    src={logoUrl}
-                                    alt={companyName}
-                                    className="max-h-12 max-w-full object-contain filter drop-shadow-sm"
-                                />
+                            <div className="flex items-center gap-4">
+                                <div className="h-20 md:h-24 max-w-[220px] flex items-center justify-start">
+                                    <img
+                                        src={logoUrl}
+                                        alt={companyName}
+                                        className="max-h-20 md:max-h-24 max-w-full object-contain filter drop-shadow-md rounded-xl"
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                                        {companyName}
+                                    </h2>
+                                    <p className="text-xs font-semibold text-fuchsia-600 tracking-wider uppercase mt-1">
+                                        {tagline}
+                                    </p>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex items-center gap-3">
